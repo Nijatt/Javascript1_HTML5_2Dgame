@@ -1,0 +1,383 @@
+<canvas id="ctx" width="1300" height="600" style="border:1px solid #000000;"></canvas> 
+<script>
+var ctx=document.getElementById("ctx").getContext("2d");
+//modify settings
+ctx.font='30px Arial'; //font used
+// variables
+var HEIGTH=600;
+var WIDTH=1300;
+var starttime=Date.now(); // retunt the time in milli seconds
+var framecount=0;
+var score=0;
+//player
+
+var player={
+x:50,
+spdx:30,
+y:40,
+spdy:5,
+hp:1000,
+width:20,
+height:20,
+color:'green',
+atspeed:5,
+pressingDown:false,
+pressingUp:false,
+pressingLeft:false,
+pressingRight:false,
+aimangle:0
+};
+// enemy 
+var enemylist={};
+// upgrade
+var upgradelist={};
+//bullet
+var bulletlist={};
+// ENEMY FUCNTION
+var enemybulletlist={};
+// enemy constructor
+enemy=function(id,xx,yy,spdxx,spdyy,w,h){
+	var enemycraft={
+	x:xx,
+	spdx:spdxx,
+	y:yy,
+	spdy:spdyy,
+	width:w,
+	height:h,
+	color:'red',
+	aimangle:0
+	//aimangle:0,
+	};
+	enemylist[id]=enemycraft;
+}
+//upgrade const
+upgrade=function(id,xx,yy,spdxx,spdyy,w,h,cat,col){
+	var upgradecraft={
+		x:xx,
+		spdx:spdxx,
+		y:yy,
+		spdy:spdyy,
+		width:w,
+		height:h,
+		color:col,
+		category:cat
+	};
+	upgradelist[id]=upgradecraft;
+}
+//bullet construction
+bullet=function(id,xx,yy,spdxx,spdyy,w,h){
+	var bulletcraft={
+		x:xx,
+		spdx:spdxx,
+		y:yy,
+		spdy:spdyy,
+		width:w,
+		height:h,
+		color:'orange'
+	};
+	bulletlist[id]=bulletcraft;
+}
+//enemy bullet
+enemybullet=function(id,xx,yy,spdxx,spdyy,w,h){
+	var bulletcraft={
+		x:xx,
+		spdx:spdxx,
+		y:yy,
+		spdy:spdyy,
+		width:w,
+		height:h,
+		color:'black'
+	};
+	enemybulletlist[id]=bulletcraft;
+}
+//
+//****************************
+document.onmousemove=function(mouse){
+	var mousex=mouse.clientX-document.getElementById('ctx').getBoundingClientRect().left; //8px
+	var mousey=mouse.clientY-document.getElementById('ctx').getBoundingClientRect().top;
+	mousex-=player.x;
+	mousey-=player.y;
+	player.aimangle=Math.atan2(mousey,mousex)/Math.PI*180;
+	/*if(mousex<player.width/2){
+		mousex=player.width/2;
+	}
+	if(mousex>WIDTH-player.width/2){
+		mousex=WIDTH-player.width/2;
+	}
+	if(mousey<player.height/2){
+		mousey=player.height/2;
+	}
+	if(mousey>HEIGTH-player.height/2){
+		mousey=HEIGTH-player.height/2;
+	}
+	player.x=mousex;
+	player.y=mousey;
+	*/
+}
+
+document.onclick=function(mouse){
+	randomlyGenerateBullet(player);
+}
+
+document.oncontextmenu=function(mouse){
+	randomlyGenerateBullet(player);
+	mouse.preventDefault();
+}
+//keydown
+
+document.onkeydown=function(event){
+	if(event.keyCode==68){
+		player.pressingRight=true;
+}
+	if(event.keyCode==83){
+		player.pressingDown=true;
+}
+	if(event.keyCode==65){
+		player.pressingLeft=true;
+}
+	if(event.keyCode==87){
+		player.pressingUp=true;
+	}
+}
+//keyup
+document.onkeyup=function(event){
+	if(event.keyCode==68){
+		player.pressingRight=false;
+	}
+	if(event.keyCode==83){
+		player.pressingDown=false;
+	}
+	if(event.keyCode==65){
+		player.pressingLeft=false;
+	}	
+	if(event.keyCode==87){
+		player.pressingUp=false;
+	}
+}
+//****************************
+
+performAttact=function(actor){
+	player.x-=actor.x;
+	player.y-=actor.y;
+	actor.aimangle=Math.atan2(player.y,player.x)/Math.PI*180;
+	randomlyGenerateBulletenemy(actor);
+}
+randomlyGenerateBulletenemy=function(actor){
+	var x=actor.x;
+	var y=actor.y;
+	var id=Math.random();
+	var height=10;
+	var width=10;
+	//var angle=Math.random()*360;
+	var angle=actor.aimangle;
+	var spdx=Math.cos(angle/180*Math.PI)*45;
+	var spdy=Math.sin(angle/180*Math.PI)*45;
+	enemybullet(id,x,y,spdx,spdy,width,height)
+}
+updatePlayerPosition=function(){
+	if(player.pressingRight){
+		player.x+=10;
+	}
+	if(player.pressingLeft){
+		player.x-=10;
+	}
+	if(player.pressingDown){
+		player.y+=10;
+	}
+	if(player.pressingUp){
+		player.y-=10;
+	}
+	// is position valid
+	if(player.x<player.width/2){
+		player.x=player.width/2;
+	}
+	if(player.x>WIDTH-player.width/2){
+		player.x=WIDTH-player.width/2;
+	}
+	if(player.y<player.height/2){
+		player.y=player.height/2;
+	}
+	if(player.y>HEIGTH-player.height/2){
+		player.y=HEIGTH-player.height/2;
+	}
+}
+// fucntion
+updateEntity=function(s){
+	updateEntityPosition(s);
+	drawEntity(s);
+}
+updateEntityPosition=function(s){
+	s.x+=s.spdx;
+	s.y+=s.spdy;
+	if(s.x<0 || s.x>WIDTH){
+		s.spdx=-s.spdx;
+	}
+	if(s.y<0 || s.y>HEIGTH){
+		s.spdy=-s.spdy;
+	}
+}
+
+drawEntity=function(s){
+	ctx.save();
+	ctx.fillStyle=s.color;
+	ctx.fillRect(s.x-s.width/2,s.y-s.height/2,s.width,s.height);
+	ctx.restore();
+}
+// collisions
+
+getDistance=function(ply1,ply2){//distance between enemies
+	var vx=ply1.x-ply2.x;
+	var vy=ply1.y-ply2.y;
+	return Math.sqrt(vx*vx+vy*vy);
+}
+// test collisions
+testColl=function(ply1,ply2){
+	var rect1={
+		x:ply1.x-ply1.width/2,
+		y:ply1.y-ply1.height/2,
+		width:ply1.width,
+		height:ply1.height
+	};
+	var rect2={
+		x:ply2.x-ply2.width/2,
+		y:ply2.y-ply2.height/2,
+		width:ply2.width,
+		height:ply2.height
+	};
+	return testCollRect(rect1,rect2);
+}
+
+testCollRect=function(rect1,rect2){
+	return rect1.x<=rect2.x+rect2.width && rect2.x<=rect1.x+rect1.width && rect2.y<=rect2.y+rect2.height && rect2.y<=rect1.y+rect1.height;
+}
+
+
+
+update=function(){
+	ctx.clearRect(0,0,WIDTH,HEIGTH);
+	framecount++;
+	score++;
+	if(framecount%50==0){
+		randomlyGenerateEnemy();
+	}
+	if(framecount%75==0){
+		randomlyGenerateUpgrade();
+	}
+	//update entity
+	for(var key in bulletlist){
+		updateEntity(bulletlist[key]);
+	if(bulletlist[key].x<=0 || bulletlist[key].x>=WIDTH || bulletlist[key].y<=0 || bulletlist[key].y>=HEIGTH){
+		delete bulletlist[key];
+		break;
+	}
+	for (var key1 in enemylist){
+		var iscolliding=testColl(bulletlist[key],enemylist[key1]);
+		if(iscolliding){
+		delete bulletlist[key];
+		delete enemylist[key1];
+		score+=1000;
+		break;
+		}
+	}
+}
+	//----------------------------------------------------------
+	for(var key in upgradelist){
+		updateEntity(upgradelist[key]);
+		var iscolliding=testColl(player,upgradelist[key]);
+		if (iscolliding){
+			if (upgradelist[key].category=='score'){
+					score+=5000;
+			}			
+		if(upgradelist[key].category=='atspeed'){
+			score+=10000;
+		}
+		delete upgradelist[key];
+		}
+		for (var key1 in enemylist){
+			var iscolliding2=testColl(upgradelist[key],enemylist[key1]);
+			if(iscolliding2){
+			delete upgradelist[key];
+			break
+			}
+		}
+	}
+
+	for(var key in enemylist){
+		updateEntity(enemylist[key]);
+		var iscolliding=testColl(player,enemylist[key]);
+		if (iscolliding){
+			player.hp=player.hp-1;
+		}
+		if(player.hp<=0){
+		var timesurvived=Date.now()-starttime;
+			console.log("you survavied"+timesurvived+"ms");
+			startNewGame();
+		}
+	}
+	updatePlayerPosition();
+	drawEntity(player);
+	ctx.fillText("Hp:"+player.hp,0,30);
+	ctx.fillText("Score:"+score,300,30)
+}
+//clear everything
+startNewGame=function(){
+	player.hp=1000;
+	starttime=Date.now();
+	framecount=0;
+	score=0;
+	enemylist={};
+	upgradelist={};
+	bulletlist={};
+	randomlyGenerateEnemy();
+	randomlyGenerateEnemy();
+	randomlyGenerateEnemy();
+}
+//bullet generator
+
+randomlyGenerateBullet=function(actor){
+	var x=actor.x;
+	var y=actor.y;
+	var id=Math.random();
+	var height=10;
+	var width=10;
+	//var angle=Math.random()*360;
+	var angle=actor.aimangle;
+	var spdx=Math.cos(angle/180*Math.PI)*45;
+	var spdy=Math.sin(angle/180*Math.PI)*45;
+	bullet(id,x,y,spdx,spdy,width,height)
+}
+// upgrade generator
+randomlyGenerateUpgrade=function(){
+	var x=Math.random()*WIDTH;
+	var y=Math.random()*HEIGTH;
+	var id=Math.random();
+	var height=10;
+	var width=10;
+	var spdx=0;
+	var spdy=0;
+	if(Math.random()<0.5){
+		var category='score';
+		var color='blue';
+	}
+	else{
+		category='atspeed';
+		var color='purple';
+	}
+	upgrade(id,x,y,spdx,spdy,width,height,category,color)
+}
+// enemygenerator
+randomlyGenerateEnemy=function(){
+	var x=Math.random()*WIDTH;
+	var y=Math.random()*HEIGTH;
+	var id=Math.random();
+	var height=10+Math.random()*30;
+	var width=10+Math.random()*30;
+	var spdx=5+Math.random()*5;
+	var spdy=5+Math.random()+5;
+	enemy(id,x,y,spdx,spdy,width,height)
+}
+
+setInterval(update,40);
+startNewGame();
+
+</script>
